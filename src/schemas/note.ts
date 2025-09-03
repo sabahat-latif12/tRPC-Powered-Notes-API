@@ -37,4 +37,4 @@ export const noteSchema = noteBaseSchema.extend({
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
 export type Note = z.infer<typeof noteSchema>;
-export type NoteQuery = z.infer<typeof noteQuerySchema>; 
+export type NoteQuery = z.infer<typeof noteQuerySchema>;

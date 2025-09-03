@@ -8,9 +8,15 @@ export const notesRouter = router({
     .input(createNoteSchema)
     .mutation(async ({ input, ctx }) => {
       const note = await ctx.prisma.note.create({
-        data: input,
+        data: {
+          ...input,
+          tags: JSON.stringify(input.tags),
+        },
       });
-      return note;
+      return {
+        ...note,
+        tags: JSON.parse(note.tags),
+      };
     }),
 
   // Get a note by ID
@@ -23,7 +29,10 @@ export const notesRouter = router({
       if (!note) {
         throw new Error('Note not found');
       }
-      return note;
+      return {
+        ...note,
+        tags: JSON.parse(note.tags),
+      };
     }),
 
   // Get all notes with optional filtering and pagination
@@ -33,32 +42,37 @@ export const notesRouter = router({
       const { search, tags, page, limit } = input;
       const skip = (page - 1) * limit;
 
-      // Build where clause for filtering
-      const where: any = {};
-      
+      // Get all notes first, then filter in memory for SQLite
+      const allNotes = await ctx.prisma.note.findMany({
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      // Filter by search term if provided
+      let filteredNotes = allNotes;
       if (search) {
-        where.OR = [
-          { title: { contains: search, mode: 'insensitive' } },
-          { content: { contains: search, mode: 'insensitive' } },
-        ];
+        filteredNotes = allNotes.filter(note => 
+          note.title.toLowerCase().includes(search.toLowerCase()) ||
+          note.content.toLowerCase().includes(search.toLowerCase())
+        );
       }
 
+      // Filter by tags if provided
       if (tags && tags.length > 0) {
-        where.tags = {
-          hasSome: tags,
-        };
+        filteredNotes = filteredNotes.filter(note => {
+          const noteTags = JSON.parse(note.tags);
+          return tags.some(tag => noteTags.includes(tag));
+        });
       }
 
-      // Get notes with pagination
-      const [notes, total] = await Promise.all([
-        ctx.prisma.note.findMany({
-          where,
-          orderBy: { updatedAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-        ctx.prisma.note.count({ where }),
-      ]);
+      // Apply pagination
+      const total = filteredNotes.length;
+      const paginatedNotes = filteredNotes.slice(skip, skip + limit);
+
+      // Parse tags for each note
+      const notes = paginatedNotes.map(note => ({
+        ...note,
+        tags: JSON.parse(note.tags),
+      }));
 
       return {
         notes,
@@ -84,14 +98,17 @@ export const notesRouter = router({
       const updateData: any = {};
       if (data.title !== undefined) updateData.title = data.title;
       if (data.content !== undefined) updateData.content = data.content;
-      if (data.tags !== undefined) updateData.tags = data.tags;
+      if (data.tags !== undefined) updateData.tags = JSON.stringify(data.tags);
       
       const note = await ctx.prisma.note.update({
         where: { id },
         data: updateData,
       });
       
-      return note;
+      return {
+        ...note,
+        tags: JSON.parse(note.tags),
+      };
     }),
 
   // Delete a note
@@ -112,9 +129,9 @@ export const notesRouter = router({
         select: { tags: true },
       });
       
-      const allTags = notes.flatMap(note => note.tags);
+      const allTags = notes.flatMap(note => JSON.parse(note.tags));
       const uniqueTags = [...new Set(allTags)].sort();
       
       return uniqueTags;
     }),
-}); 
+});

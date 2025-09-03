@@ -10,11 +10,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for tRPC
+}));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Health check endpoint
@@ -28,11 +33,16 @@ app.use(
   createExpressMiddleware({
     router: appRouter,
     createContext,
-    onError: ({ error }) => {
-      console.error('tRPC Error:', error);
+    onError: ({ error, path, input }) => {
+      console.error('tRPC Error:', { error, path, input });
     },
   })
 );
+
+// Catch-all handler for unmatched routes
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
 // Start server
 app.listen(PORT, () => {
@@ -50,4 +60,4 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully...');
   process.exit(0);
-}); 
+});

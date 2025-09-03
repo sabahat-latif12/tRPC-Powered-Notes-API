@@ -5,7 +5,7 @@ import type { AppRouter } from './routers';
 const client = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: 'http://localhost:3000/trpc',
+      url: 'http://localhost:3001/trpc',
     }),
   ],
 });
@@ -31,7 +31,7 @@ async function testAPI() {
       limit: 10,
     });
     console.log(`✅ Found ${allNotes.notes.length} notes`);
-    console.log('📝 Notes:', allNotes.notes.map(n => ({ id: n.id, title: n.title, tags: n.tags })));
+    console.log('📝 Notes:', allNotes.notes.map((n) => ({ id: n.id, title: n.title, tags: n.tags })));
 
     // 3. Get note by ID
     console.log('\n3️⃣ Getting note by ID...');

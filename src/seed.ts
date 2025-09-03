@@ -14,27 +14,27 @@ async function main() {
     {
       title: 'Welcome to Notes API',
       content: 'This is your first note! You can create, read, update, and delete notes using the tRPC API.',
-      tags: ['welcome', 'getting-started'],
+      tags: JSON.stringify(['welcome', 'getting-started']),
     },
     {
       title: 'Shopping List',
       content: 'Milk, bread, eggs, cheese, and some fresh vegetables for the week.',
-      tags: ['shopping', 'personal'],
+      tags: JSON.stringify(['shopping', 'personal']),
     },
     {
       title: 'Meeting Notes - Project Kickoff',
       content: 'Discussed project timeline, team roles, and initial requirements. Next meeting scheduled for Friday.',
-      tags: ['work', 'meeting', 'project'],
+      tags: JSON.stringify(['work', 'meeting', 'project']),
     },
     {
       title: 'Recipe Ideas',
       content: 'Pasta carbonara, chicken curry, and homemade pizza. Need to buy ingredients this weekend.',
-      tags: ['cooking', 'recipes', 'food'],
+      tags: JSON.stringify(['cooking', 'recipes', 'food']),
     },
     {
       title: 'Book Recommendations',
       content: 'The Pragmatic Programmer, Clean Code, and Design Patterns. Must-read for developers.',
-      tags: ['books', 'programming', 'learning'],
+      tags: JSON.stringify(['books', 'programming', 'learning']),
     },
   ];
 
@@ -52,8 +52,9 @@ async function main() {
   });
 
   console.log('\n📝 Sample notes created:');
-  notes.forEach((note) => {
-    console.log(`  - ${note.title} (${note.tags.join(', ')})`);
+  notes.forEach((note: { title: any; tags: any; }) => {
+    const parsedTags = JSON.parse(note.tags);
+    console.log(`  - ${note.title} (${parsedTags.join(', ')})`);
   });
 
   console.log('\n🎉 Database seeding completed!');
@@ -66,4 +67,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });
